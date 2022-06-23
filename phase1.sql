@@ -10,7 +10,7 @@ CREATE TABLE Users (
     fname varchar(255), 
     lname varchar(255), 
     dob date, 
-    town varchar(255), 
+    hometown varchar(255), 
     gender varchar (255),
     PRIMARY KEY (user_id)
 );
@@ -58,7 +58,7 @@ CREATE TABLE contain(
 );
 CREATE TABLE comm_on(
 	comm_id int4 REFERENCES Comments(comm_id) ON DELETE CASCADE, 
-    album_id int4 REFERENCES Album(album_id) ON DELETE CASCADE,
+    picture_id int4 REFERENCES Album(album_id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, album_id)
 );
 CREATE TABLE comm(
