@@ -141,7 +141,7 @@ def register_user():
 		# adding rest of attributes
 		fname = request.form.get('fname')
 		lname = request.form.get('lname')
-		hometown = request.form.get('town')
+		hometown = request.form.get('hometown')
 		gender = request.form.get('gender')
 		birthdate = request.form.get('dob')
 	except:
@@ -151,7 +151,7 @@ def register_user():
 	test =  isEmailUnique(email)
 	if test:
 		# SQL query to add into database
-		print(cursor.execute("INSERT INTO Users (email, password, fname, lname, town, gender, dob) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')". \
+		print(cursor.execute("INSERT INTO Users (email, password, fname, lname, hometown, gender, dob) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')". \
 			format(email, password, fname, lname, hometown, gender, birthdate)))
 		conn.commit()
 		#log user in
