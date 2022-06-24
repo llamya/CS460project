@@ -9,6 +9,9 @@
 # see links for further understanding
 ###################################################
 
+from contextlib import suppress
+from curses import flash
+from email import message
 from zmq import NULL
 import flask
 from flask import Flask, Response, request, render_template, redirect, url_for
@@ -134,7 +137,7 @@ def unauthorized_handler():
 #you can specify specific methods (GET/POST) in function header instead of inside the functions as seen earlier
 @app.route("/register", methods=['GET'])
 def register():
-	return render_template('register.html', supress='True')
+	return render_template('register.html', suppress='True')
 
 @app.route("/register", methods=['POST'])
 def register_user():
@@ -161,12 +164,17 @@ def register_user():
 		user = User()
 		user.id = email
 		flask_login.login_user(user)
-		return render_template('hello.html', name=fname, message='Account Created!')
+		return render_template('hello.html', name=fname, message='Account Created!', suppress='True')
 	else:
 		print("couldn't find all tokens")
-		return flask.redirect(flask.url_for('register'))
+		return flask.redirect(flask.url_for('account_exists', message='This email already has an account.'))
+    
+# helping to display message that account exists
+@app.route('/account_exists')
+def account_exists():
+	return render_template('register.html')
 
-
+		
 # function to get User photos
 def getUsersPhotos(uid):
 	cursor = conn.cursor()
@@ -176,6 +184,11 @@ def getUsersPhotos(uid):
 def getUserIdFromEmail(email):
 	cursor = conn.cursor()
 	cursor.execute("SELECT user_id FROM Users WHERE email = '{0}'".format(email))
+	return cursor.fetchone()[0]
+
+def getUserNameFromEmail(email):
+	cursor = conn.cursor()
+	cursor.execute("SELECT fname FROM Users WHERE email = '{0}'".format(email))
 	return cursor.fetchone()[0]
 
 def isEmailUnique(email):
@@ -188,20 +201,12 @@ def isEmailUnique(email):
 		return True
 #end login code
 
-# function to check if email exists in database
-def emailExists(email):
-	cursor = conn.cursor()
-	cursor.execute("SELECT user_id FROM Users WHERE email = '{0}'".format(email))
-	if (cursor.fetchone()[0]) != NULL:
-		return True 
-	else:
-		return False
-
 
 @app.route('/profile')
 @flask_login.login_required
 def protected():
-	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile")
+	# change display name to real name
+	return render_template('hello.html', name = getUserNameFromEmail(flask_login.current_user.id), message="Here's your profile")
 
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML
@@ -246,10 +251,10 @@ def add_friend():
 		print("Couldn't find email") #this prints to shell, end users will not see this (all print statements go to shell)
 		return flask.redirect(flask.url_for('friends'))
 	cursor = conn.cursor()
-	test =  emailExists(friend_email)
-	if test:
+	test = isEmailUnique(friend_email)
+	if test==False:
 		# SQL query to add into database
-		print(cursor.execute("INSERT INTO Friends (friend_id, user_id) VALUES ('{0}', '{1}')". \
+		print(cursor.execute("INSERT INTO Friends (friend_email, user_email) VALUES ('{0}', '{1}')". \
 			format(friend_email, flask_login.current_user.id)))
 		conn.commit()
 		return render_template('friends.html', name=flask_login.current_user.id, message='Friend added!')
