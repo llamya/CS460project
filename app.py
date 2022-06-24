@@ -125,7 +125,7 @@ def logout():
 	flask_login.logout_user()
 	# potentially want to change logout page to be different than hello page
 	###############
-	return render_template('hello.html', message='Logged out')
+	return render_template('logout.html', message='Logged out')
 
 @login_manager.unauthorized_handler
 def unauthorized_handler():
@@ -175,13 +175,13 @@ def getUsersPhotos(uid):
 
 def getUserIdFromEmail(email):
 	cursor = conn.cursor()
-	cursor.execute("SELECT user_id  FROM Users WHERE email = '{0}'".format(email))
+	cursor.execute("SELECT user_id FROM Users WHERE email = '{0}'".format(email))
 	return cursor.fetchone()[0]
 
 def isEmailUnique(email):
 	#use this to check if a email has already been registered
 	cursor = conn.cursor()
-	if cursor.execute("SELECT email  FROM Users WHERE email = '{0}'".format(email)):
+	if cursor.execute("SELECT email FROM Users WHERE email = '{0}'".format(email)):
 		#this means there are greater than zero entries with that email
 		return False
 	else:
