@@ -9,6 +9,7 @@
 # see links for further understanding
 ###################################################
 
+from zmq import NULL
 import flask
 from flask import Flask, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
@@ -122,6 +123,8 @@ def login():
 @app.route('/logout')
 def logout():
 	flask_login.logout_user()
+	# potentially want to change logout page to be different than hello page
+	###############
 	return render_template('hello.html', message='Logged out')
 
 @login_manager.unauthorized_handler
@@ -158,7 +161,7 @@ def register_user():
 		user = User()
 		user.id = email
 		flask_login.login_user(user)
-		return render_template('hello.html', name=email, message='Account Created!')
+		return render_template('hello.html', name=fname, message='Account Created!')
 	else:
 		print("couldn't find all tokens")
 		return flask.redirect(flask.url_for('register'))
@@ -184,6 +187,16 @@ def isEmailUnique(email):
 	else:
 		return True
 #end login code
+
+# function to check if email exists in database
+def emailExists(email):
+	cursor = conn.cursor()
+	cursor.execute("SELECT user_id FROM Users WHERE email = '{0}'".format(email))
+	if (cursor.fetchone()[0]) != NULL:
+		return True 
+	else:
+		return False
+
 
 @app.route('/profile')
 @flask_login.login_required
@@ -218,6 +231,32 @@ def upload_file():
 @app.route("/", methods=['GET'])
 def hello():
 	return render_template('hello.html', message='Welecome to Photoshare')
+
+# friends page to search and add friends
+@app.route("/friends", methods=['GET'])
+def friends():
+	return render_template('friends.html', message='Friend Search')
+
+# method to add friends 
+@app.route("/friends", methods=['POST'])
+def add_friend():
+	try:
+		friend_email = request.form.get('email')
+	except:
+		print("Couldn't find email") #this prints to shell, end users will not see this (all print statements go to shell)
+		return flask.redirect(flask.url_for('friends'))
+	cursor = conn.cursor()
+	test =  emailExists(friend_email)
+	if test:
+		# SQL query to add into database
+		print(cursor.execute("INSERT INTO Friends (friend_id, user_id) VALUES ('{0}', '{1}')". \
+			format(friend_email, flask_login.current_user.id)))
+		conn.commit()
+		return render_template('friends.html', name=flask_login.current_user.id, message='Friend added!')
+	else:
+		print("Couldn't add friend")
+		return flask.redirect(flask.url_for('friends'))
+
 
 
 if __name__ == "__main__":
