@@ -19,18 +19,9 @@
     </ul>
 {% endif %}
 
-
 {% if message is none %}
   <p>You should <a href='/login'>login!</a></p>
 {% else %}
   <p> Go to <a href='/profile'>profile?</a></p>
 {% endif %}
 
-<ul>
-<li><a href='/upload'>Upload a photo</a> </li>
-<li><a href='/friends'>Add/View friends</a> </li>
-{% if not_logged_out %}
-<li><a href='/logout'>Logout</a></li>
-{% endif %}
-<li><a href='/'>Home</a></li>
-</ul>

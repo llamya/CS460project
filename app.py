@@ -9,6 +9,7 @@
 # see links for further understanding
 ###################################################
 
+from ast import Not
 from contextlib import suppress
 from curses import flash
 from email import message
@@ -181,6 +182,12 @@ def getUsersPhotos(uid):
 	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures WHERE user_id = '{0}'".format(uid))
 	return cursor.fetchall() #NOTE return a list of tuples, [(imgdata, pid, caption), ...]
 
+# function to get User friends
+def getUserFriends(email):
+	cursor = conn.cursor()
+	cursor.execute("SELECT friend_email FROM Friends WHERE email = '{0}'".format(email))
+	return cursor.fetchall()
+
 def getUserIdFromEmail(email):
 	cursor = conn.cursor()
 	cursor.execute("SELECT user_id FROM Users WHERE email = '{0}'".format(email))
@@ -189,6 +196,11 @@ def getUserIdFromEmail(email):
 def getUserNameFromEmail(email):
 	cursor = conn.cursor()
 	cursor.execute("SELECT fname FROM Users WHERE email = '{0}'".format(email))
+	return cursor.fetchone()[0]
+
+def getAlbumIDFromUserAndName(user, album):
+	cursor = conn.cursor()
+	cursor.execute("SELECT album_id FROM Albums WHERE user_id = '{0}' and album_name = '{1}'".format(user, album))
 	return cursor.fetchone()[0]
 
 def isEmailUnique(email):
@@ -206,13 +218,26 @@ def isEmailUnique(email):
 @flask_login.login_required
 def protected():
 	# change display name to real name
-	return render_template('hello.html', name = getUserNameFromEmail(flask_login.current_user.id), message="Here's your profile")
+	uid = getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('hello.html', not_logged_out = True, name = getUserNameFromEmail(flask_login.current_user.id), photos=getUsersPhotos(uid), base64=base64, message="Here's your profile")
 
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 def allowed_file(filename):
 	return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+# checking if album exists
+def isAlbumUnique(album, id):
+#use this to check if an album has already been made by user 
+	cursor = conn.cursor()
+	if cursor.execute("SELECT user_id, '{0}' FROM Albums WHERE user_id = '{1}' and album_name = '{0}'".format(album, id)):
+		#this means there are greater than zero entries with that email
+		return False
+	else:
+		return True
+
+
 
 @app.route('/upload', methods=['GET', 'POST'])
 @flask_login.login_required
@@ -221,11 +246,16 @@ def upload_file():
 		uid = getUserIdFromEmail(flask_login.current_user.id)
 		imgfile = request.files['photo']
 		caption = request.form.get('caption')
+		album = request.form.get('album')
+		album_date = request.form.get('album_date')
+		albumID = getAlbumIDFromUserAndName(uid, album)
 		photo_data =imgfile.read()
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Pictures (imgdata, user_id, caption) VALUES (%s, %s, %s )''', (photo_data, uid, caption))
+		if isAlbumUnique(album, uid):
+			cursor.execute("INSERT INTO Albums (album_id, album_name, user_id, date) VALUES ('{0}', '{1}', '{2}', '{3}')".format(albumID, album, uid, album_date))
+		cursor.execute('''INSERT INTO Pictures (imgdata, user_id, caption, album_id) VALUES (%s, %s, %s, '{3}')''', (photo_data, uid, caption, albumID))
 		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(uid), base64=base64)
+		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', not_logged_out = True, photos=getUsersPhotos(uid), base64=base64)
 	#The method is GET so we return a  HTML form to upload the a photo.
 	else:
 		return render_template('upload.html')
@@ -240,28 +270,36 @@ def hello():
 # friends page to search and add friends
 @app.route("/friends", methods=['GET'])
 def friends():
-	return render_template('friends.html', message='Friend Search')
+	user_email = flask_login.current_user.id
+	allFriends = getUserFriends(user_email)
+	return render_template('friends.html', suppress='True', all_friends=allFriends)
 
 # method to add friends 
 @app.route("/friends", methods=['POST'])
 def add_friend():
 	try:
-		friend_email = request.form.get('email')
+		friend_email = request.form.get('friend_email')
 	except:
 		print("Couldn't find email") #this prints to shell, end users will not see this (all print statements go to shell)
 		return flask.redirect(flask.url_for('friends'))
 	cursor = conn.cursor()
+	user_email = flask_login.current_user.id
 	test = isEmailUnique(friend_email)
 	if test==False:
 		# SQL query to add into database
-		print(cursor.execute("INSERT INTO Friends (friend_email, user_email) VALUES ('{0}', '{1}')". \
-			format(friend_email, flask_login.current_user.id)))
+		print(cursor.execute("INSERT INTO Friends (friend_email, email) VALUES ('{0}', '{1}')".format(friend_email, flask_login.current_user.id)))
+		print(cursor.execute("INSERT INTO Friends (email, friend_email) VALUES ('{0}', '{1}')".format(friend_email, flask_login.current_user.id)))
+		allFriends = getUserFriends(user_email)
 		conn.commit()
-		return render_template('friends.html', name=flask_login.current_user.id, message='Friend added!')
+		return render_template('friends.html', message='Friend added!', all_friends = allFriends)
 	else:
 		print("Couldn't add friend")
-		return flask.redirect(flask.url_for('friends'))
-
+		return flask.redirect(flask.url_for('friend_dne'))
+    
+# helping to display message that friend does not exist
+@app.route('/friend_dne')
+def friend_dne():
+	return render_template('friends.html', message='This friend does not exist')
 
 
 if __name__ == "__main__":
