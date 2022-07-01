@@ -246,11 +246,11 @@ def isAlbumUnique(album, id):
 
 def allAlbums():
 	cursor = conn.cursor()
-	cursor.execute("SELECT album_name, fname, lname FROM Albums, Users WHERE Albums.user_id = Users.user_id")
+	cursor.execute("SELECT album_name, Albums.user_id, fname, lname FROM Albums, Users WHERE Albums.user_id = Users.user_id")
 	all_albums = cursor.fetchall()
 	return all_albums
 
-@app.route("/viewAlbums", methods=['GET'])
+@app.route("/viewAlbums", methods=['GET', 'POST'])
 def viewAlbums():
 	return render_template('viewAlbums.html', message='Here are all the albums', all_albums = allAlbums())
 
@@ -282,14 +282,18 @@ def upload_file():
 #end photo uploading code
 
 
-@app.route("/albumPics", methods=['GET'])
+@app.route("/albumPics", methods=['GET', 'POST'])
 def pics_peralbum():
 	cursor = conn.cursor()
-	album = 0 # CHANGE THIS TO passed album from html
-	# print(album)
-	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P, Albums as A WHERE P.album_name = A.album_name AND A.album_name = '{0}'".format(album))
-	all_photos = cursor.fetchall()
-	return render_template('hello.html', message='Photos in the album', photos=all_photos, base64=base64) 
+	album = request.form.get('album_name')
+	user_id = request.form.get('user_id')
+	print(album)
+	print('************************')
+	print(user_id)
+	print('8888888888888888888888888')
+	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P, Albums as A WHERE  A.album_name = '{0}' AND P.album_name = A.album_name AND A.user_id = '{1}'".format(album, user_id))
+	pictures_inAlbum = cursor.fetchall()
+	return render_template('hello.html', message='Photos in the album', photos=pictures_inAlbum, base64=base64) 
 
 @app.route("/redirectToHome", methods=['GET', 'POST'])
 def redirectToHome():
