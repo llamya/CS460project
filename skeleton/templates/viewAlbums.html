@@ -5,7 +5,7 @@
     <body>
         <ul>
              {% for album in all_albums %}
-             <li> <a href='/albumPics'> {{album}} </li>
+             <li> <a href='/albumPics'> {{album[0]}} </li>
             {% endfor %}
         </ul>
 
