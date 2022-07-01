@@ -213,6 +213,7 @@ def isEmailUnique(email):
 #end login code
 
 
+
 @app.route('/profile')
 @flask_login.login_required
 def protected():
@@ -236,6 +237,15 @@ def isAlbumUnique(album, id):
 	else:
 		return True
 
+def allAlbums():
+	cursor = conn.cursor()
+	cursor.execute("SELECT album_name, fname, lname FROM Albums, Users WHERE Albums.user_id = Users.user_id")
+	all_albums = cursor.fetchall()
+	return all_albums
+
+@app.route("/viewAlbums", methods=['GET'])
+def viewAlbums():
+	return render_template('viewAlbums.html', message='Here are all the albums', all_albums = allAlbums())
 
 @app.route('/upload', methods=['GET', 'POST'])
 @flask_login.login_required
@@ -263,6 +273,17 @@ def upload_file():
 	else:
 		return render_template('upload.html')
 #end photo uploading code
+
+	return render_template('hello.html', message='Ranked user activites on the platform')
+
+@app.route("/albumPics", methods=['GET'])
+def pics_peralbum():
+	cursor = conn.cursor()
+	album = 0 # CHANGE THIS TO passed album from html
+	# print(album)
+	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P, Albums as A WHERE P.album_name = A.album_name AND A.album_name = '{0}'".format(album))
+	all_photos = cursor.fetchall()
+	return render_template('hello.html', message='Photos in the album', photos=all_photos, base64=base64) 
 
 #default page
 @app.route("/", methods=['GET'])
@@ -298,6 +319,17 @@ def are_friends(friend_email):
 			if friend == friend_email:
 				return True
 	return False
+
+def getAllUserAct():
+	cursor = conn.cursor()
+	# add comments to the calculations
+	cursor.execute("WITH CTE AS (SELECT U.fname, U.lname, P.user_id, count(P.picture_id) as pic_count FROM Pictures as P, Users as U WHERE P.user_id = U.user_id GROUP BY 1,2,3) SELECT fname, lname, pic_count FROM CTE ORDER BY pic_count DESC LIMIT 10")
+	top_users = cursor.fetchall()
+	return top_users
+
+@app.route("/useractivity", methods=['GET'])
+def activity_page():
+	return render_template('userActivity.html', message='TOP 10 users with the most activity, (first name, last name, number of contributions)', TopUsers = getAllUserAct())
 
 # helping to display message that friend does not exist
 @app.route('/are_friended')

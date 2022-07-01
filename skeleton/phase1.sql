@@ -1,4 +1,4 @@
- DROP DATABASE IF EXISTS photoshare;
+DROP DATABASE PHOTOSHARE;
 CREATE DATABASE photoshare;
 USE photoshare;
 
@@ -31,12 +31,12 @@ CREATE TABLE Friends (
 
 CREATE TABLE Pictures (
   picture_id int4  AUTO_INCREMENT,
-  album_name  varchar(255),
+  album_name varchar(255) REFERENCES ALbums(album_name),
   imgdata longblob ,
   caption varchar(255),
   user_id int4 REFERENCES Users(user_id) ON DELETE CASCADE, 
 #  INDEX upid_idx (album_id),
-  PRIMARY KEY (picture_id, user_id)
+  PRIMARY KEY (picture_id, user_id, album_name)
 );
 
 CREATE TABLE Comments (
@@ -84,5 +84,3 @@ CREATE TABLE Liked (
 );
 
 
-INSERT INTO Users (email, password) VALUES ('test@bu.edu', 'test');
-INSERT INTO Users (email, password) VALUES ('test1@bu.edu', 'test');
