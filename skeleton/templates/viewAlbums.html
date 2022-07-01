@@ -1,0 +1,13 @@
+{% if message %}
+  <h4>{{message}}!</h4>
+{% endif %}
+
+    <body>
+        <ul>
+             {% for album in all_albums %}
+             <li> <a href='/albumPics'> {{album[0]}} </li>
+            {% endfor %}
+        </ul>
+
+    </body>
+<a href='/'>Home</a>
