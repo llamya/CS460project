@@ -1,0 +1,13 @@
+{% if message %}
+  <h4>{{message}}!</h4>
+{% endif %}
+
+    <body>
+        <ul>
+             {% for top in TopUsers %}
+                 <li>{{top}}</li>
+            {% endfor %}
+        </ul>
+
+    </body>
+<a href='/'>Home</a>
