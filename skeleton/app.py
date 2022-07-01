@@ -12,6 +12,8 @@
 from ast import Not
 from contextlib import suppress
 from email import message
+from numbers import Number
+from operator import countOf
 from zmq import NULL
 import flask
 from flask import Flask, Response, request, render_template, redirect, url_for
@@ -27,7 +29,7 @@ app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = '2867713'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'R0nanZ0sia01*'
 app.config['MYSQL_DATABASE_DB'] = 'photoshare'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
@@ -44,11 +46,15 @@ cursor = conn.cursor()
 cursor.execute("SELECT email from Users")
 users = cursor.fetchall()
 
+
+##### Helper functions to support specific SQL functions
+
 # function that returns all user emails
 def getUserList():
 	cursor = conn.cursor()
 	cursor.execute("SELECT email from Users")
 	return cursor.fetchall()
+
 
 
 class User(flask_login.UserMixin):
@@ -142,6 +148,7 @@ def register():
 @app.route("/register", methods=['POST'])
 def register_user():
 	try:
+		# retrieving information from form in html
 		email = request.form.get('email')
 		password = request.form.get('password')
 		# adding rest of attributes
@@ -151,10 +158,12 @@ def register_user():
 		gender = request.form.get('gender')
 		birthdate = request.form.get('dob')
 	except:
+		# can't retrieve information from form 
 		print("couldn't find all tokens") #this prints to shell, end users will not see this (all print statements go to shell)
 		return flask.redirect(flask.url_for('register'))
 	cursor = conn.cursor()
 	test =  isEmailUnique(email)
+	# new user
 	if test:
 		# SQL query to add into database
 		print(cursor.execute("INSERT INTO Users (email, password, fname, lname, hometown, gender, dob) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')". \
@@ -190,6 +199,11 @@ def getUserFriends(email):
 def getUserIdFromEmail(email):
 	cursor = conn.cursor()
 	cursor.execute("SELECT user_id FROM Users WHERE email = '{0}'".format(email))
+	return cursor.fetchone()[0]
+
+def getUserEmailFromId(id):
+	cursor = conn.cursor()
+	cursor.execute("SELECT email FROM Users WHERE user_id = '{0}'".format(id))
 	return cursor.fetchone()[0]
 
 def getUserNameFromEmail(email):
@@ -285,15 +299,64 @@ def pics_peralbum():
 	all_photos = cursor.fetchall()
 	return render_template('hello.html', message='Photos in the album', photos=all_photos, base64=base64) 
 
-#default page
+# page for adding comments
+
+@app.route("/redirectToHome", methods=['GET', 'POST'])
+def redirectToHome():
+	return flask.redirect(flask.url_for('hello'))
+
+#you can specify specific methods (GET/POST) in function header instead of inside the functions as seen earlier
 @app.route("/", methods=['GET'])
-def hello():
+def render_home():
+	# to display information on home by default (feed)
 	cursor = conn.cursor()
-	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures")
+	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P")
 	all_photos = cursor.fetchall()
+	cursor = conn.cursor()
+	cursor.execute("SELECT C.comm_text, C.picture_id FROM Pictures as P, Comments as C WHERE P.picture_id=C.picture_id")
+	all_comments = cursor.fetchall()
 	if (all_photos):
-		return render_template('hello.html', message='Welecome to Photoshares home page', photos=all_photos, base64=base64, heading='The feed')
-	return render_template('hello.html', message='Welecome to Photoshares homepage')
+		return render_template('hello.html', message='Welcome to Photoshares home page', photos=all_photos, comments=all_comments, base64=base64, heading='The feed')
+	return render_template('hello.html', message='Welcome to Photoshares home page')
+
+@app.route("/deletePicture<picture_id>", methods=['GET', 'POST'])
+def deletePicture(picture_id):
+	if request.method == 'POST':
+		delete = request.form.get('delete_picture')
+		if delete:
+			cursor = conn.cursor()
+			cursor.execute("DELETE FROM Pictures WHERE picture_id='{0}'".format(picture_id))
+			conn.commit()
+			message = "You have deleted a picture"
+	return render_template('hello.html', suppress='True', message=message)
+
+
+# #default page
+@app.route("/", methods=['POST'])
+def hello():
+	# inserting input comment into database
+	try:
+		comment = request.form.get('new_comm')
+		cursor = conn.cursor()
+		print(cursor.execute("INSERT INTO Comments(comm_text, picture_id) VALUES ('{0}', '{1}')".format(comment, 2)))
+		conn.commit()
+	except:
+		print("no comment")
+		# render_template('hello.html', message='Welcome to Photoshares home page', photos=all_photos, comments=all_comments, base64=base64, heading='The feed')
+	
+	# to display information on home
+	cursor = conn.cursor()
+	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P")
+	all_photos = cursor.fetchall()
+	cursor = conn.cursor()
+	cursor.execute("SELECT C.comm_text, C.picture_id FROM Pictures as P, Comments as C WHERE P.picture_id=C.picture_id")
+	all_comments = cursor.fetchall()
+	if (all_photos):
+		return render_template('hello.html', message='Welcome to Photoshares home page', photos=all_photos, currentPhoto=4, comments=all_comments, base64=base64, heading='The feed')
+	return render_template('hello.html', message='Welcome to Photoshares home page')
+
+
+
 
 # friends page to search and add friends
 @app.route("/friends", methods=['GET'])
@@ -308,16 +371,13 @@ def friend_dne():
 	return render_template('friends.html', message='This friend does not exist')
 
 def are_friends(friend_email):
-	cursor = conn.cursor()
-	all_users = cursor.execute("SELECT email From Users")
-	# all_users = cursor.fetchall()
-	for user in all_users:
+	for user in getUserList():
 		cursor = conn.cursor()
-		all_friends = cursor.execute("SELECT friend_email From Friends WHERE email = '{0}".format(user))
-		# all_friends = cursor.fetchall()
-		for friend in all_friends: 
-			if friend == friend_email:
-				return True
+		cursor.execute("SELECT friend_email FROM Friends WHERE email = '{0}'".format(user))
+		all_friends = cursor.fetchall()
+	for friend in all_friends: 
+		if friend == friend_email:
+			return True
 	return False
 
 def getAllUserAct():
@@ -348,11 +408,12 @@ def add_friend():
 	user_email = flask_login.current_user.id
 	test = isEmailUnique(friend_email)
 	if test==False:
-		# check if the friend is already added
-		if are_friends(friend_email):
-			print("Already friends with them")
-			return flask.redirect(flask.url_for('are_friended'))
+		# check if the friend is already added 
+		# if are_friends(friend_email):
+		# 	print("Already friends with them")
+		# 	return flask.redirect(flask.url_for('are_friended'))
 		# SQL query to add into database
+		print("Reached this point")
 		print(cursor.execute("INSERT INTO Friends (friend_email, email) VALUES ('{0}', '{1}')".format(friend_email, flask_login.current_user.id)))
 		print(cursor.execute("INSERT INTO Friends (email, friend_email) VALUES ('{0}', '{1}')".format(friend_email, flask_login.current_user.id)))
 		allFriends = getUserFriends(user_email)

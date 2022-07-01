@@ -1,7 +1,6 @@
-DROP DATABASE PHOTOSHARE;
+DROP DATABASE photoshare;
 CREATE DATABASE photoshare;
 USE photoshare;
-
 
 CREATE TABLE Users (
     user_id int4 AUTO_INCREMENT,
@@ -44,7 +43,8 @@ CREATE TABLE Comments (
     friend_email varchar(255) REFERENCES Friends(friend_email) ON DELETE CASCADE,
     comm_text varchar(255), 
     comm_date date,
-    PRIMARY KEY (comm_id)
+    picture_id int4 REFERENCES Pictures(picture_id) ON DELETE CASCADE,
+    PRIMARY KEY (comm_id, picture_id)
 );
 
 CREATE TABLE Tags ( 
