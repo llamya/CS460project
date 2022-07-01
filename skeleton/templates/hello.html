@@ -18,23 +18,12 @@
         <li>comment: {{comm[0]}}<br>
       {% endif %}
     {% endfor %}
-    {% for like in likes %}
-      {% if photo[1]==like[0] %}
-        <form method="post" action="{{url_for('likeCounter')}}">
-          <input type ="hidden" name = "picture_id" value={{photo[1]}}>
-          <input type ="hidden" name = "photos" value={{photos}}>
-          <input type ="hidden" name = "comments" value={{comments}}>
-          <input type="submit" value="Like"/>
-        </form>
-        <li>Number of Likes: {{likeCounter()}}<br>
-      {% endif %}
-    {% endfor %}
 
-    <form method="post" action="{{url_for('hello')}}">
-      <input type ="hidden" name = "picture_id" value={{photo[1]}}>
-      <label for="new_comm">Make a comment:</label>
-      <input type="text" name="new_comm" /><br />
-      <input type="submit" />
+    <form method="post" action="{{ url_for('hello') }}">
+    <input type ="hidden" name = "picture_id" value={{photo[1]}}>
+    <label for="new_comm">Make a comment:</label>
+    <input type="text" name="new_comm" /><br />
+    <input type="submit" />
     </form>
     
     <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' />
