@@ -184,6 +184,11 @@ def getUsersPhotos(uid):
 	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures WHERE user_id = '{0}'".format(uid))
 	return cursor.fetchall() #NOTE return a list of tuples, [(imgdata, pid, caption), ...]
 
+def getUsersComments(uid):
+	cursor = conn.cursor()
+	cursor.execute("SELECT comm_text, picture_id FROM Comments Where friend_email = '{0}'".format(uid))
+	return cursor.fetchall()
+
 # function to get User friends
 def getUserFriends(email):
 	cursor = conn.cursor()
@@ -225,7 +230,9 @@ def isEmailUnique(email):
 def protected():
 	# change display name to real name
 	uid = getUserIdFromEmail(flask_login.current_user.id)
-	return render_template('hello.html', not_logged_out = True, name = getUserNameFromEmail(flask_login.current_user.id), photos=getUsersPhotos(uid), base64=base64, message="Here's your profile", heading='Here are your uploads')
+	user_photos=getUsersPhotos(uid)
+	user_comments= getUsersComments(uid)
+	return render_template('hello.html', not_logged_out = True, name = getUserNameFromEmail(flask_login.current_user.id), photos=user_photos, comments=user_comments,base64=base64, message="Here's your profile", heading='Here are your uploads')
 
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML
@@ -245,7 +252,7 @@ def isAlbumUnique(album, id):
 
 def allAlbums():
 	cursor = conn.cursor()
-	cursor.execute("SELECT album_name, fname, lname FROM Albums, Users WHERE Albums.user_id = Users.user_id")
+	cursor.execute("SELECT album_name, Albums.user_id FROM Albums, Users WHERE Albums.user_id = Users.user_id")
 	all_albums = cursor.fetchall()
 	return all_albums
 
@@ -281,16 +288,19 @@ def upload_file():
 #end photo uploading code
 
 
-@app.route("/albumPics", methods=['GET'])
+@app.route("/albumPics", methods=['GET', 'POST'])
 def pics_peralbum():
+	album = request.form.get('album_name') # get album name from HTML code
+	print(album)
+	print("XOXOXOXOXOXOOXO")
+	user_id = request.form.get('user_id') # get user id from HTML code
+	print(user_id)
+	print("XOXOXOXOXOXOOXO")
+	
 	cursor = conn.cursor()
-	album = 0 # CHANGE THIS TO passed album from html
-	# print(album)
-	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P, Albums as A WHERE P.album_name = A.album_name AND A.album_name = '{0}'".format(album))
-	all_photos = cursor.fetchall()
-	return render_template('hello.html', message='Photos in the album', photos=all_photos, base64=base64) 
-
-# page for adding comments
+	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P, Albums as A WHERE  A.album_name = '{0}' AND P.album_name = A.album_name AND P.user_id = '{1}'".format(album, user_id))
+	pictures_inAlbum = cursor.fetchall()
+	return render_template('hello.html', message='Photos in the album', photos=pictures_inAlbum, base64=base64) 
 
 @app.route("/redirectToHome", methods=['GET', 'POST'])
 def redirectToHome():
@@ -330,10 +340,10 @@ def hello():
 		comment = request.form.get('new_comm')
 		cursor = conn.cursor()
 		picture_id = request.form.get('picture_id')
-		print(picture_id)
-		print(comment)
-		print('******************************************')
-		print(cursor.execute("INSERT INTO Comments(comm_text, picture_id) VALUES ('{0}', '{1}')".format(comment, picture_id)))
+		user_email = flask_login.current_user.id
+		print(flask_login.current_user.id)
+		print('**************************************')
+		print(cursor.execute("INSERT INTO Comments(comm_text, picture_id, friend_email) VALUES ('{0}', '{1}')".format(comment, picture_id, user_email)))
 		conn.commit()
 	except:
 		print("no comment")
@@ -377,7 +387,7 @@ def are_friends(friend_email):
 def getAllUserAct():
 	cursor = conn.cursor()
 	# add comments to the calculations
-	cursor.execute("WITH CTE AS (SELECT U.fname, U.lname, P.user_id, count(P.picture_id) as pic_count FROM Pictures as P, Users as U WHERE P.user_id = U.user_id GROUP BY 1,2,3) SELECT fname, lname, pic_count FROM CTE ORDER BY pic_count DESC LIMIT 10")
+	cursor.execute("WITH CTE AS (SELECT U.fname, U.lname, P.user_id, count(P.picture_id), count(C.comm_id) as pic_count FROM Pictures as P, Users as U, Comments as C WHERE P.user_id = U.user_id GROUP BY 1,2,3) SELECT fname, lname, pic_count FROM CTE ORDER BY pic_count DESC LIMIT 10")
 	top_users = cursor.fetchall()
 	return top_users
 

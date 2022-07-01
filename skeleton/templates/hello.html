@@ -28,14 +28,6 @@
     
     <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' />
     
-<!-- 
-    <form method="post" enctype="multipart/form-data" action="/deletePicture{{currentPhoto}}">
-      <input type ="hidden" name = "picture_id" value="{{photo[1]}}">
-      <input type ="hidden" name = "delete_picture" value=True>
-      <input type="submit" value="Delete" />
-    </form> -->
-
-
   </li>
   {% endfor %}
 </ul>

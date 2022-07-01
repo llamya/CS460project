@@ -5,7 +5,13 @@
     <body>
         <ul>
              {% for album in all_albums %}
-             <li> <a href='/albumPics'> {{album[0]}} </li>
+                <form method="post" action="{{ url_for('pics_peralbum') }}">
+                    <input type ="hidden" name = "album_name" value={{album[0]}}>
+                    <input type ="hidden" name = "user_id" value={{album[1]}}>
+                    <li> {{album[0]}} </li>
+                    <input type="submit" />
+                </form>
+                
             {% endfor %}
         </ul>
 
