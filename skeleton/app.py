@@ -30,7 +30,7 @@ app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = '2867713'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'R0nanZ0sia01*'
 app.config['MYSQL_DATABASE_DB'] = 'photoshare'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
@@ -310,6 +310,29 @@ def deletePicture(picture_id):
 		message = "You have deleted a picture"
 		return render_template('hello.html', suppress='True', message=message)
 	return render_template('hello.html', suppress='True', message="picture NOT deleted")
+
+
+@app.route("/like_pic", methods=['GET', 'POST'])
+def like_picture():
+	user_email = flask_login.current_user.id
+	picture_id = request.form.get('picture_id')
+	all_photos = request.form.get('photos')
+	all_comments = request.form.get('comments')
+	cursor = conn.cursor()
+	cursor.execute("INSERT INTO Liked(friend_email, picture_id) VALUES('{0}', '{1}'".format(user_email, picture_id))
+	conn.commit()
+	cursor = conn.cursor()
+	cursor.execute("SELECT picture.id, friend_email FROM Liked")
+	allLikeTuples = cursor.fetchall()
+	return render_template('hello.html', message='Welcome to Photoshares home page', photos=all_photos, comments=all_comments, base64=base64, heading='The feed', likes=allLikeTuples)
+
+# this function should return a list of tuples that contains picture_id and friend_email
+@app.route("/like_counter", methods=['GET', 'POST'])
+def likeCounter():
+	picture_id = request.form.get('picture_id')
+	cursor = conn.cursor()
+	likes_per_picture = cursor.execute("SELECT COUNT(friend_email) FROM Liked WHERE picture_id='{0}'".format(picture_id))
+	return likes_per_picture
 
 #you can specify specific methods (GET/POST) in function header instead of inside the functions as seen earlier
 @app.route("/", methods=['GET'])
