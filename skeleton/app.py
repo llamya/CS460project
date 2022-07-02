@@ -30,7 +30,7 @@ app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = '2867713'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'R0nanZ0sia01*'
 app.config['MYSQL_DATABASE_DB'] = 'photoshare'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
@@ -263,18 +263,27 @@ def upload_file():
 		caption = request.form.get('caption')
 		album = request.form.get('album')
 		album_date = request.form.get('album_date')
-		#dont need this anymore becasue we changed primary keys
-		# albumID = getAlbumIDFromUserAndName(uid, album)
+		tags = request.form.get('tags')
+		list_tags = tags.split()
 		photo_data =imgfile.read()
+	
 		cursor = conn.cursor()
-		#adding tags
-		# tags = request.form.get('tags')
-
 		if isAlbumUnique(album, uid):
 			cursor.execute('''INSERT INTO Albums (album_name, user_id, date_ofc) VALUES (%s, %s, %s)''', (album, uid, album_date))
 		conn.commit() 
-		cursor.execute('''INSERT INTO Pictures (album_name, imgdata, caption, user_id) VALUES (%s, %s, %s, %s)''', (album, photo_data, caption, uid ))
+		cursor.execute('''INSERT INTO Pictures (album_name, imgdata, caption, user_id) VALUES (%s, %s, %s, %s)''', (album, photo_data, caption, uid))
 		conn.commit()
+		cursor = conn.cursor()
+		pic_id = cursor.execute("SELECT MAX(picture_id) FROM Pictures")
+		#adding tags
+		for element in list_tags:
+			cursor = conn.cursor()
+			cursor.execute("INSERT INTO Tags (word) VALUES ('{0}')".format(element))
+			conn.commit()
+			cursor = conn.cursor()
+			cursor.execute("INSERT INTO Associated (picture_id, word) VALUES ('{0}', '{1}')".format(pic_id, element))
+			conn.commit()
+
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', not_logged_out = True, photos=getUsersPhotos(uid), base64=base64, heading='Here are your photos')
 	#The method is GET so we return a  HTML form to upload the a photo.
 	else:
@@ -287,10 +296,6 @@ def pics_peralbum():
 	cursor = conn.cursor()
 	album = request.form.get('album_name')
 	user_id = request.form.get('user_id')
-	print(album)
-	print('************************')
-	print(user_id)
-	print('8888888888888888888888888')
 	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P, Albums as A WHERE  A.album_name = '{0}' AND P.album_name = A.album_name AND A.user_id = '{1}'".format(album, user_id))
 	pictures_inAlbum = cursor.fetchall()
 	return render_template('hello.html', message='Photos in the album', photos=pictures_inAlbum, base64=base64) 
@@ -421,12 +426,8 @@ def add_friend():
 	cursor = conn.cursor()
 	user_email = flask_login.current_user.id
 	test = isEmailUnique(friend_email)
+	# means that this email exists to be added
 	if test==False:
-		# check if the friend is already added 
-		# if are_friends(friend_email):
-		# 	print("Already friends with them")
-		# 	return flask.redirect(flask.url_for('are_friended'))
-		# SQL query to add into database
 		print("Reached this point")
 		print(cursor.execute("INSERT INTO Friends (friend_email, email) VALUES ('{0}', '{1}')".format(friend_email, flask_login.current_user.id)))
 		print(cursor.execute("INSERT INTO Friends (email, friend_email) VALUES ('{0}', '{1}')".format(friend_email, flask_login.current_user.id)))
@@ -435,6 +436,31 @@ def add_friend():
 		return render_template('friends.html', message='Friend added!', all_friends = allFriends)
 	else:
 		print("Couldn't add friend")
+		return flask.redirect(flask.url_for('friend_dne'))
+
+# method to delete friends 
+@app.route("/friends_deleted", methods=['GET','POST'])
+def delete_friend():
+	try:
+		friend_email = request.form.get('friend_email_delete')
+	except:
+		print("Couldn't find email") #this prints to shell, end users will not see this (all print statements go to shell)
+		return flask.redirect(flask.url_for('friends'))
+	cursor = conn.cursor()
+	user_email = flask_login.current_user.id
+	test = isEmailUnique(friend_email)
+	# means that this email exists to be deleted
+	if test==False:
+		cursor = conn.cursor()
+		cursor.execute("DELETE FROM Friends WHERE friend_email = '{0}' AND email = '{1}'".format(friend_email, flask_login.current_user.id))
+		conn.commit()
+		cursor = conn.cursor()
+		cursor.execute("DELETE FROM Friends WHERE friend_email = '{1}' AND email = '{0}'".format(friend_email, flask_login.current_user.id))
+		conn.commit()
+		allFriends = getUserFriends(user_email)
+		return render_template('friends.html', message='Friend deleted!', all_friends = allFriends)
+	else:
+		print("Couldn't delete friend")
 		return flask.redirect(flask.url_for('friend_dne'))
 
 

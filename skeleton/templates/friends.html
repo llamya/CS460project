@@ -10,7 +10,7 @@
         </div>
         <div id="content">
             <form method="post" action="{{ url_for('add_friend') }}">
-                <label for="friend_email">Enter friend's email:</label>
+                <label for="friend_email">Enter email of friend you'd like to add:</label>
                 <input type="email" name="friend_email" /><br />
                 <input type="submit" />
             </form>
@@ -23,6 +23,11 @@
             {% endfor %}
         </ul>
         {% endif %}
+        <form method="post" action="{{ url_for('delete_friend') }}">
+            <label for="friend_email_delete">Enter email of friend you'd like to delete:</label>
+            <input type="email" name="friend_email_delete" /><br />
+            <input type="submit" />
+        </form>
 
     </body>
 <a href='/'>Home</a>

@@ -47,7 +47,7 @@ CREATE TABLE Comments (
 );
 
 CREATE TABLE Tags ( 
-	tag_id int4,
+	tag_id int4 auto_increment,
 	word varchar(255), 
     PRIMARY KEY (tag_id)
 );
@@ -72,8 +72,8 @@ CREATE TABLE Comm (
 
 CREATE TABLE Associated (
 	picture_id int4 REFERENCES Pictures(picture_id) ON DELETE CASCADE, 
-    tag_id int4 REFERENCES Tags(tag_id) ON DELETE CASCADE,
-    PRIMARY KEY (picture_id, tag_id)
+    word varchar(255) REFERENCES Tags(word) ON DELETE CASCADE,
+    PRIMARY KEY (picture_id, word)
 );
 
 CREATE TABLE Liked (
