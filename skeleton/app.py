@@ -266,23 +266,27 @@ def upload_file():
 		tags = request.form.get('tags')
 		list_tags = tags.split()
 		photo_data =imgfile.read()
-	
-		cursor = conn.cursor()
 		if isAlbumUnique(album, uid):
+			cursor = conn.cursor()
 			cursor.execute('''INSERT INTO Albums (album_name, user_id, date_ofc) VALUES (%s, %s, %s)''', (album, uid, album_date))
-		conn.commit() 
+			conn.commit() 
+		cursor = conn.cursor()
 		cursor.execute('''INSERT INTO Pictures (album_name, imgdata, caption, user_id) VALUES (%s, %s, %s, %s)''', (album, photo_data, caption, uid))
 		conn.commit()
+	
+		# trying to get current picture ID
 		cursor = conn.cursor()
-		pic_id = cursor.execute("SELECT MAX(picture_id) FROM Pictures")
+		cursor.execute("SELECT MAX(picture_id) FROM Pictures")
+		pic_id = int(cursor.fetchall()[0][0])
+		
 		#adding tags
 		for element in list_tags:
 			cursor = conn.cursor()
-			cursor.execute("INSERT INTO Tags (word) VALUES ('{0}')".format(element))
+			cursor.execute("INSERT INTO Tags (word, picture_id) VALUES ('{0}', '{1}')".format(element, pic_id))
 			conn.commit()
-			cursor = conn.cursor()
-			cursor.execute("INSERT INTO Associated (picture_id, word) VALUES ('{0}', '{1}')".format(pic_id, element))
-			conn.commit()
+			# cursor = conn.cursor()
+			# cursor.execute("INSERT INTO Associated (picture_id, word) VALUES ('{0}', '{1}')".format(pic_id, element))
+			# conn.commit()
 
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', not_logged_out = True, photos=getUsersPhotos(uid), base64=base64, heading='Here are your photos')
 	#The method is GET so we return a  HTML form to upload the a photo.

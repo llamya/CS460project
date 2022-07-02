@@ -46,10 +46,10 @@ CREATE TABLE Comments (
     PRIMARY KEY (comm_id, picture_id)
 );
 
-CREATE TABLE Tags ( 
-	tag_id int4 auto_increment,
+CREATE TABLE Tags (
 	word varchar(255), 
-    PRIMARY KEY (tag_id)
+    picture_id int4 REFERENCES Pictures(picture_id) ON DELETE CASCADE,
+    PRIMARY KEY (word, picture_id)
 );
 
 #CREATE TABLE Contain (
