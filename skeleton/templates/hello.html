@@ -19,13 +19,18 @@
       {% endif %}
     {% endfor %}
 
-    <form method="post" action="{{ url_for('hello') }}">
+    <form method="post" action="{{url_for('hello')}}">
     <input type ="hidden" name = "picture_id" value={{photo[1]}}>
     <label for="new_comm">Make a comment:</label>
     <input type="text" name="new_comm" /><br />
     <input type="submit" />
     </form>
     
+    <form method="post" action="{{url_for('delete_picture')}}">
+      <input type ="hidden" name = "picture_delete" value={{photo[1]}}>
+      <input type="submit" value = "Delete Picture"/>
+    </form>
+
     <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' />
     
   </li>

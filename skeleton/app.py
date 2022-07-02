@@ -343,16 +343,6 @@ def redirectToHome():
 	return flask.redirect(flask.url_for('hello'))
 
 
-@app.route("/deletePicture<picture_id>", methods=['GET', 'POST'])
-def deletePicture(picture_id):
-	delete = request.form.get('delete_picture')
-	if delete:
-		cursor = conn.cursor()
-		cursor.execute("DELETE FROM Pictures WHERE picture_id='{0}'".format(picture_id))
-		conn.commit()
-		message = "You have deleted a picture"
-		return render_template('hello.html', suppress='True', message=message)
-	return render_template('hello.html', suppress='True', message="picture NOT deleted")
 
 #you can specify specific methods (GET/POST) in function header instead of inside the functions as seen earlier
 @app.route("/", methods=['GET'])
@@ -506,7 +496,27 @@ def search_tag_pics():
 			intersection_tags += tuple """
 	return render_template('hello.html', message='Photos with these tags', photos=all_pictures_with_tags, base64=base64)
 	
+# method to delete pictures 
+@app.route("/pictures_deleted", methods=['GET','POST'])
+def delete_picture():
+	try:
+		picture_id = request.form.get('picture_delete')
+		cursor = conn.cursor()
+		cursor.execute("DELETE FROM Pictures WHERE picture_id = '{0}'".format(picture_id))
+		conn.commit()
+		cursor = conn.cursor()
+		cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P")
+		all_photos = cursor.fetchall()
+		cursor = conn.cursor()
+		cursor.execute("SELECT C.comm_text, C.picture_id FROM Pictures as P, Comments as C WHERE P.picture_id=C.picture_id")
+		all_comments = cursor.fetchall()
+		return render_template('hello.html', message='Photo Deleted', photos=all_photos, comments=all_comments, base64=base64)
+	except:
+		print("Couldn't delete picture") #this prints to shell, end users will not see this (all print statements go to shell)
+		return flask.redirect(flask.url_for('hello'))
 
+
+# method to delete albums and all pictures with it
 
 
 # helping to display message that friend does not exist
