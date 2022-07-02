@@ -12,6 +12,7 @@
 from ast import Not
 from contextlib import suppress
 from email import message
+from multiprocessing import allow_connection_pickling
 from numbers import Number
 from operator import countOf
 from zmq import NULL
@@ -20,6 +21,7 @@ from flask import Flask, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
 import flask_login
 import datetime
+from collections import Counter
 
 #for image uploading
 import os, base64
@@ -219,6 +221,15 @@ def isEmailUnique(email):
 		return False
 	else:
 		return True
+
+def isTagUnique(word):
+	#use this to check if a tag has already been made
+	cursor = conn.cursor()
+	if cursor.execute("SELECT word FROM Tags WHERE word = '{0}'".format(word)):
+		#this means there are greater than zero entries with that email
+		return False
+	else:
+		return True
 #end login code
 
 @app.route('/profile')
@@ -411,6 +422,7 @@ def are_friends(friend_email):
 			return True
 	return False
 
+# user activity
 def getAllUserAct():
 	cursor = conn.cursor()
 	# add comments to the calculations
@@ -436,6 +448,66 @@ def getAllUserAct():
 @app.route("/useractivity", methods=['GET'])
 def activity_page():
 	return render_template('userActivity.html', message='TOP 10 users with the most activity, (first name, last name, number of contributions)', TopUsers = getAllUserAct())
+
+
+# tag activity
+def getAllTagAct():
+	cursor = conn.cursor()
+	# add comments to the calculations
+	query_activity = """SELECT word, count(picture_id) as pic_count FROM Tags 
+						GROUP BY word
+						ORDER BY pic_count DESC"""
+	cursor.execute(query_activity)
+	top_tags = cursor.fetchall()
+	return top_tags
+
+@app.route("/tagactivity", methods=['GET'])
+def tag_page():
+	return render_template('tagActivity.html', message='TOP 10 tags with the most pictures, (tag name, number of pictures using this tag)', TopTags = getAllTagAct())
+
+
+
+# searching by tag 
+#you can specify specific methods (GET/POST) in function header instead of inside the functions as seen earlier
+@app.route("/searchTag", methods=['GET'])
+def searchTag():
+	return render_template('searchPictures.html', suppress='True')
+
+def tag_pictures(tag_list):
+	all_pictures_with_tags = ()
+	for tag in tag_list:
+		cursor = conn.cursor()
+		cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P, Tags as T WHERE T.picture_id = P.picture_id AND T.word = '{0}'".format(tag))
+		all_pictures_with_tags += cursor.fetchall()	
+	all_pictures_with_tags = set(all_pictures_with_tags)
+	return  all_pictures_with_tags
+
+
+@app.route("/searchTag2", methods=['POST'])
+def search_tag_pics():
+	try:
+		# retrieving information from form in html
+		all_tags = request.form.get('search_tags')
+		list_tags = all_tags.split()
+	except:
+		# can't retrieve information from form 
+		print("couldn't find all tags") #this prints to shell, end users will not see this (all print statements go to shell)
+		return flask.redirect(flask.url_for('searchTag'))
+	for tag in list_tags:
+		test = isTagUnique(tag)
+		if test:
+			return render_template('searchPictures.html', message="Please enter valid tags", suppress='True')
+	all_pictures_with_tags = tag_pictures(list_tags)
+	""" num_tags = len(list_tags)
+	counter = Counter(all_pictures_with_tags)
+	intersection_tags = ()
+	for tuple in counter:
+		if int(counter[tuple]) == num_tags:
+			intersection_tags += tuple """
+	return render_template('hello.html', message='Photos with these tags', photos=all_pictures_with_tags, base64=base64)
+	
+
+
 
 # helping to display message that friend does not exist
 @app.route('/are_friended')
