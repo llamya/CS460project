@@ -244,6 +244,8 @@ def isAlbumUnique(album, id):
 	else:
 		return True
 
+
+# to view all albums
 def allAlbums():
 	cursor = conn.cursor()
 	cursor.execute("SELECT album_name, Albums.user_id, fname, lname FROM Albums, Users WHERE Albums.user_id = Users.user_id")
@@ -253,6 +255,27 @@ def allAlbums():
 @app.route("/viewAlbums", methods=['GET', 'POST'])
 def viewAlbums():
 	return render_template('viewAlbums.html', message='Here are all the albums', all_albums = allAlbums())
+
+
+# to view all tags
+def allTags():
+	cursor = conn.cursor()
+	cursor.execute("SELECT DISTINCT word FROM Tags")
+	all_tags = cursor.fetchall()
+	return all_tags
+
+@app.route("/viewTags", methods=['GET', 'POST'])
+def viewTags():
+	return render_template('viewTags.html', message='Here are all the tags', all_tags = allTags())
+
+@app.route("/tagPics", methods=['GET', 'POST'])
+def pics_pertag():
+	cursor = conn.cursor()
+	tag = request.form.get('tag_name')
+	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption FROM Pictures as P, Tags as T WHERE T.picture_id = P.picture_id AND T.word = '{0}'".format(tag))
+	pictures_inTag = cursor.fetchall()
+	return render_template('hello.html', message='Photos in the tag', photos=pictures_inTag, base64=base64) 
+
 
 @app.route('/upload', methods=['GET', 'POST'])
 @flask_login.login_required
