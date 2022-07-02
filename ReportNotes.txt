@@ -1,0 +1,19 @@
+Notes on Program:
+
+Functionality:
+- We added functionality that allows the user to delete their account from their profile page.
+- We expanded the functionality to allow users to delete their own photos only.
+
+Assumptions:
+- We followed the assumption that searching by tags should show all photos with any of the given tags.
+- We assumed that deleting a user means their photos should persist.
+
+Limitations:
+- Missing like functionality 
+- Missing "You-May-Also-Like" functionality
+
+Bonus Functionality:
+- Bonus: viewing all photos by tag name (5 pts)
+- Bonus: Unfriend (5 pts)
+- Bonus: Delete a user (5 pts)
+
