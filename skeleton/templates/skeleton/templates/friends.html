@@ -1,0 +1,33 @@
+{% if message %}
+  <h4>{{message}}!</h4>
+{% endif %}
+<head>
+    <title>Add friends!</title>
+</head>
+    <body>
+        <div class="title">
+            <h1>Enter the email of your desired friend below.</h1>
+        </div>
+        <div id="content">
+            <form method="post" action="{{ url_for('add_friend') }}">
+                <label for="friend_email">Enter email of friend you'd like to add:</label>
+                <input type="email" name="friend_email" /><br />
+                <input type="submit" />
+            </form>
+         </div>
+         {% if all_friends %}
+            <h2>Here are your friends:</h2>
+        <ul>
+             {% for friend in all_friends %}
+                 <li>{{friend}}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        <form method="post" action="{{ url_for('delete_friend') }}">
+            <label for="friend_email_delete">Enter email of friend you'd like to delete:</label>
+            <input type="email" name="friend_email_delete" /><br />
+            <input type="submit" />
+        </form>
+
+    </body>
+<a href='/'>Home</a>

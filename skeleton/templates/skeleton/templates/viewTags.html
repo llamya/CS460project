@@ -1,0 +1,19 @@
+{% if message %}
+  <h4>{{message}}!</h4>
+{% endif %}
+
+    <body>
+        <ul>
+             {% for tag in all_tags %}
+                <form method="post" action="{{ url_for('pics_pertag') }}">
+                    <input type ="hidden" name = "tag_name" value={{tag[0]}}>
+                    <input type ="hidden" name = "picture_id" value={{tag[1]}}>
+                    <li> {{tag[0]}} </li>
+                    <input type="submit" />
+                </form>
+                
+            {% endfor %}
+        </ul>
+
+    </body>
+<a href='/'>Home</a>
